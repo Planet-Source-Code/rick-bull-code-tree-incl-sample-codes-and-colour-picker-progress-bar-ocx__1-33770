@@ -1,0 +1,918 @@
+{\rtf1\ansi\ansicpg1252\deff0\deftab720{\fonttbl{\f0\fswiss MS Sans Serif;}{\f1\froman\fcharset2 Symbol;}{\f2\froman\fprq2 Tahoma;}{\f3\fswiss Tahoma;}{\f4\fswiss\fprq2 System;}{\f5\froman\fprq2 Times New Roman;}}
+{\colortbl\red0\green0\blue0;\red0\green128\blue0;}
+\deflang2057\pard\plain\f2\fs20\cf1 'Info '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 'Colour Module Written by Ricky Bull - April 2001
+\par 'Email: rickbull@rickmusic.co.uk
+\par 'WWW: http://www.rickmusic.co.uk
+\par 'Note that the Left, Top, Width & Height values in these subs
+\par 'are all in pixels (I think!?!).
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'\plain\f2\fs20 
+\par Option Explicit 'Declare all variables
+\par 
+\par 'API Declarations '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par Private Declare Function GetPixel Lib "gdi32" (ByVal hDC As Long, _
+\par     ByVal X As Long, ByVal Y As Long) As Long 'API for finding pixel colours
+\par Private Declare Function SetPixel Lib "gdi32" (ByVal hDC As Long, _
+\par     ByVal X As Long, ByVal Y As Long, ByVal crColor As Long) _
+\par     As Long 'API for setting the pixel colour
+\par     
+\par Private Declare Function GetDC Lib "user32" (ByVal hWnd As Long) _
+\par     As Long 'API for getting an object's DC
+\par Private Declare Function InvertRect Lib "user32" (ByVal hDC As Long, _
+\par     lpRect As RECT) As Long 'API for inverting rect's colours
+\par Private Declare Function ReleaseDC Lib "user32" (ByVal hWnd As Long, _
+\par     ByVal hDC As Long) As Long 'API for releasing an object's DC
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 
+\par 'Constants '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 'Binary Constants:
+\par Private Const EightBit = 255 'The maximum that an 8-bit string can total
+\par Private Const SixteenBit = 65535 'The maximum that an 16-bit string can total
+\par Private Const ThirtyTwoBit = 16777215 'The maxmium that an 32-bit string can total
+\par 'Private Const SixtyFourBit = 4294967295# 'The maximum that an 64-bit string can total
+\par Public Const HWND_DESKTOP = 0
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 
+\par 'Enumerations '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par Public Enum LandscapePortscape 'Orientation of the matrix
+\par     Landscape = 0
+\par     Portrait = 1
+\par End Enum
+\par Public Enum NoiseStyles 'Noise style (Random or Uniform)
+\par     Random = 0
+\par     Uniform = 1
+\par End Enum
+\par Public Enum Sizes 'Sizes for the Matrix size
+\par     Massive = 1
+\par     Large = 2
+\par     Medium = 3
+\par     Small = 4
+\par     Tiny = 5
+\par End Enum
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 
+\par 'Types '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par Public Type ColourInfo 'Custom type for holding the Colour info
+\par     Red As Long
+\par     Green As Long
+\par     Blue As Long
+\par     Hexadecimal As String
+\par End Type
+\par Public Type POINTAPI 'Type for holding XY co-ordinates
+\par     X As Long
+\par     Y As Long
+\par End Type
+\par Private Type RECT 'Type for holding Top, Left, Bottom & Right for objects
+\par     Left As Long
+\par     Top As Long
+\par     Right As Long
+\par     Bottom As Long
+\par End Type
+\par '
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 
+\par Public Sub AddNoise(hDC As Long, ByVal Percentage As Integer, _
+\par     Width As Integer, Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional Style As NoiseStyles = Random, _
+\par     Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Adds noise to a picture
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim WidthStep, HeightStep As Integer 'Step variables
+\par     
+\par     'Make sure the percentage is between 1 & 100
+\par     If Percentage > 100 Then
+\par         Percentage = 100
+\par     ElseIf Percentage <= 0 Then
+\par         Percentage = 1
+\par     End If
+\par     
+\par     'Calculate the step for the Width & Height (the 101 - bit _
+\par      is done so as to invert the percentage as we are going to _
+\par      use it as the step, and the higher the % the lower the step)
+\par     WidthStep = 101 - (((Width - Left) / Width) * Percentage)
+\par     HeightStep = 101 - (((Height - Top) / Height) * Percentage)
+\par     
+\par     'Loop for the Width
+\par     For XCounter = Left To Left + Width Step WidthStep
+\par         'Loop for the Height
+\par         For YCounter = Top To Top + Height Step HeightStep
+\par             'Initialise the random function
+\par             Randomize
+\par             'Choose the style
+\par             Select Case Style
+\par                 'Uniform
+\par                 Case Uniform
+\par                     'Set a random colour on the current pixel
+\par                     Call SetPixel(hDC, XCounter, YCounter, _
+\par                         RGB(255 * Rnd, 255 * Rnd, 255 * Rnd))
+\par                 'Random
+\par                 Case Random
+\par                     'Set a random colour on the a random pixel
+\par                     Call SetPixel(hDC, ((Left + Width) * Rnd) + Left, _
+\par                         ((Top + Height) * Rnd) + Top, RGB(255 * Rnd, 255 * Rnd, 255 * Rnd))
+\par             End Select
+\par         'On to next Height pixel
+\par         Next YCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Width pixel
+\par     Next XCounter
+\par     
+\par End Sub
+\par 
+\par Public Function BlendColours(ByVal Colour1 As Long, ByVal Colour2 As Long) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Blends two colours together
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error GoTo ErrorHandler
+\par     Dim Colours(1 To 2) As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Get the RGB of both Colours
+\par     Colours(1) = GetColourInfo(Colour1)
+\par     Colours(2) = GetColourInfo(Colour2)
+\par     'Return the added RGBs / 2
+\par     BlendColours = RGB((Colours(1).Red + Colours(2).Red) / 2, _
+\par         (Colours(1).Green + Colours(2).Green) / 2, (Colours(1).Blue + Colours(2).Blue) / 2)
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return -1 on error
+\par     BlendColours = -1
+\par End Function
+\par 'FIX THE TOLERANCE
+\par Public Sub BlendPictures(Picture1hDC As Long, Picture2hDC As Long, _
+\par     DestinationhDC As Long, Width As Integer, Height As Integer, _
+\par     Optional Left As Integer = 0, Optional Top As Integer = 0, _
+\par     Optional StartX As Single = 0, Optional StartY As Single = 0, _
+\par     Optional MaskColour As Long = -1, Optional Tolerance As Byte = 0, _
+\par     Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Blends two pictures together
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim LongColour As Long 'Variable to hold the long colour
+\par     Dim Colour1, Colour2 As Long
+\par     Dim LBoundMaskColour, UBoundMaskColour As Long
+\par     Dim Colours As ColourInfo
+\par     
+\par     'If there is a mask colour
+\par     If MaskColour > -1 Then
+\par         'Get the rgb of the mask colour
+\par         Colours = GetColourInfo(MaskColour)
+\par         'If any RGB - Tolerance are < 0 make them = 0
+\par         If Colours.Red - Tolerance < 0 Then Colours.Red = 0
+\par         If Colours.Green - Tolerance < 0 Then Colours.Green = 0
+\par         If Colours.Blue - Tolerance < 0 Then Colours.Blue = 0
+\par         'Set the Long lowerbound of the mask colour
+\par         LBoundMaskColour = RGB(Colours.Red, Colours.Green, Colours.Blue)
+\par         
+\par         'Get the rgb of the mask colour
+\par         Colours = GetColourInfo(MaskColour)
+\par         'If any RGB + Tolerance are > 255 make them = 255
+\par         If Colours.Red + Tolerance > 255 Then Colours.Red = 0
+\par         If Colours.Green + Tolerance > 255 Then Colours.Green = 0
+\par         If Colours.Blue + Tolerance > 255 Then Colours.Blue = 0
+\par         'Set the Long lowerbound of the mask colour
+\par         UBoundMaskColour = RGB(Colours.Red, Colours.Green, Colours.Blue)
+\par     End If
+\par     
+\par     'Loop for the Height
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width
+\par         For XCounter = Left To Left + Width
+\par             'Get the colours of the current 2 pixels
+\par             Colour1 = GetPixel(Picture1hDC, XCounter, YCounter)
+\par             Colour2 = GetPixel(Picture2hDC, XCounter, YCounter)
+\par             'If either colour is the mask (\'b1 Tolerance) colour and the user wants a mask colour
+\par             If MaskColour <= -1 Or (Colour1 < UBoundMaskColour And Colour1 > LBoundMaskColour _
+\par                 And Colour2 < UBoundMaskColour And Colour2 > LBoundMaskColour) Then
+\par                 'Blend the two colours
+\par                 LongColour = BlendColours(Colour1, Colour2)
+\par                 'Set the new colour
+\par                 Call SetPixel(DestinationhDC, StartX + XCounter, StartY + YCounter, LongColour)
+\par             End If
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par Public Function ConvertColourToGrey(LongColour As Long) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Converts a long colour to greyscale
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error GoTo ErrorHandler
+\par     Dim Colour As ColourInfo 'Variable to hold the colour info
+\par     Dim GreyColour As Long 'Variable to hold the long and Grey colours
+\par     
+\par     'Get the Red, Green etc of the colour
+\par     Colour = GetColourInfo(LongColour)
+\par     'Add Red + Green + Blue and divide by 3
+\par     GreyColour = (Colour.Red + Colour.Green + Colour.Blue) / 3
+\par     'Return the GreyColour
+\par     ConvertColourToGrey = RGB(GreyColour, GreyColour, GreyColour)
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return the original colour
+\par     ConvertColourToGrey = LongColour
+\par End Function
+\par 
+\par Public Sub ConvertPictureToGrey(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Converts a picture in a picturebox to greyscale
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim Colour As ColourInfo 'Variable to hold the colour info
+\par     Dim LongColour, GreyColour As Long 'Variables to hold the long and Grey colours
+\par     Dim XCounter, YCounter As Integer 'Loop counters for drawing the gradient
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width
+\par             'Convert the colour of the current pixel to grey
+\par             GreyColour = ConvertColourToGrey(GetPixel(hDC, XCounter, YCounter))
+\par             'Set the pixel with all the GreyColour
+\par             Call SetPixel(hDC, XCounter, YCounter, GreyColour)
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par Public Function ConvertToBinary(ByVal Number As Long) As String
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Converts a Decimal Number to a Binary Number - used for inverting _
+\par      pictures
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     Dim Remainder As Integer 'Variable for the remainder
+\par     Dim Counter As Integer 'Loop counter
+\par     Dim BitLength As Long 'The length that the returned string should be
+\par     
+\par     'If the number is an 8-Bit string
+\par     If Number <= EightBit Then
+\par         'Make the Bit length = 8
+\par         BitLength = 8
+\par     'If the number is an 16-Bit string
+\par     ElseIf Number > EightBit And Number <= SixteenBit Then
+\par         'Make the Bit length = 16
+\par         BitLength = 16
+\par     'If the number is an 32-Bit string
+\par     ElseIf Number > SixteenBit And Number <= ThirtyTwoBit Then
+\par         'Make the Bit length = 32
+\par         BitLength = 32
+\par     'If the number is an 64-Bit string
+\par     'ElseIf Number > ThirtyTwoBit And Number <= SixtyFourBit Then
+\par         'Make the Bit length = 32
+\par         'BitLength = 64
+\par     End If
+\par 
+\par     'Loop for all Digit
+\par     For Counter = 1 To BitLength
+\par         'Find the remainder of the number / 2
+\par         Remainder = Number Mod 2
+\par         'If the remainder >= 1
+\par         If Remainder >= 1 Then
+\par             'Add a 1 to the beginning of the string
+\par             ConvertToBinary = "1" & ConvertToBinary
+\par         'If there is no remainder
+\par         Else
+\par             'Add a 0 to the beginning of the string
+\par             ConvertToBinary = "0" & ConvertToBinary
+\par         End If
+\par         'Divide the number by 2 and round it
+\par         Number = Number \\ 2
+\par     'On to next Digit
+\par     Next Counter
+\par     
+\par     'Do while the length of the string is less than the specified bit length
+\par     Do While Len(ConvertToBinary) < BitLength
+\par         'Add a 0 to the beginning of the string
+\par         ConvertToBinary = "0" & ConvertToBinary
+\par     'On to next Digit
+\par     Loop
+\par     
+\par End Function
+\par 
+\par Public Function ConvertToDecimal(BitString As String) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Converts a Binary Number to a Decimal Number - used for inverting _
+\par      pictures
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     Dim Counter As Integer 'For loops
+\par     Dim BitValue As Long 'For the current bit value(1,2,4,8, etc)
+\par     
+\par     'Initialise the bit value to 1
+\par     BitValue = 1
+\par     'Loop for the length of the BitString
+\par     For Counter = 1 To Len(BitString)
+\par         'Add the BitValue * the current bit (0 or 1)
+\par         ConvertToDecimal = ConvertToDecimal + (Int(Mid(BitString, _
+\par             Len(BitString) - (Counter - 1), 1)) * BitValue)
+\par         'Double the bit value (1,2,4,8,16, etc)
+\par         BitValue = BitValue * 2
+\par     'On to next Digit
+\par     Next Counter
+\par     
+\par End Function
+\par 
+\par Public Sub DrawColourMatrix(hDC As Long, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional ByVal MatrixWidth As Sizes = Medium, _
+\par     Optional ByVal MatrixHeight As Sizes = Large, _
+\par     Optional ByVal Orientation As LandscapePortscape = Landscape, _
+\par     Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Draws a matrix of all colours on to an object
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'For Loops
+\par     Dim Red, Green, Blue As Byte 'The current Red, Green & Blue values
+\par     Dim TempVar As Sizes 'For Swapping vars
+\par     
+\par     'Swap the width and height if orientation is portrait
+\par     If Orientation = Portrait Then
+\par         TempVar = MatrixHeight
+\par         MatrixHeight = MatrixWidth
+\par         MatrixWidth = TempVar
+\par     End If
+\par     
+\par     'Initialise green as it needs to be at 0 to start
+\par     Green = 0
+\par     'Loop for all Shades of Blue (Going from Top to Bottom)
+\par     For XCounter = 0 To 255 Step MatrixHeight
+\par         'Make Blue = the counter position
+\par         Blue = XCounter
+\par         'Loop for Red = 0 to 255 then Green 0 to 255 then Red 255 to 0 _
+\par          then Green 255 to 0 (Going from Left to Right)
+\par         For YCounter = 0 To 1023 Step MatrixWidth
+\par             'If counter is up to 255
+\par             If YCounter <= 255 Then
+\par                 'Make Red = the counter position
+\par                 Red = YCounter
+\par             'If we are between 256 & 511
+\par             ElseIf YCounter >= 256 And YCounter <= 511 Then
+\par                 'Make Green go from 0 to 255
+\par                 Green = YCounter - 256
+\par             'If we are between 512 & 767
+\par             ElseIf YCounter >= 512 And YCounter <= 767 Then
+\par                 'Make Red go from 255 to 0
+\par                 Red = 768 - YCounter
+\par             'If we are between 768 & 1023
+\par             ElseIf YCounter >= 768 Then
+\par                 'Make Green go from 255 to 0
+\par                 Green = 1023 - YCounter
+\par             End If
+\par             'If they want Landscape
+\par             If Orientation = Landscape Then
+\par                 'Set the Colour (using the current Width, Height, Red, Green & Blue values) onto the specified object
+\par                 Call SetPixel(hDC, (YCounter / MatrixWidth) + Left, _
+\par                     (XCounter / MatrixHeight) + Top, RGB(Red, Green, Blue))
+\par             'If they want Portrait
+\par             Else
+\par                 'Set the Colour (using the current Width, Height, Red, Green & Blue values) onto the specified object
+\par                 Call SetPixel(hDC, (XCounter / MatrixHeight) + Left, _
+\par                     (YCounter / MatrixWidth) + Top, RGB(Red, Green, Blue))
+\par             End If
+\par         'On to next Green or Red (X pixel)
+\par         Next YCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Blue (Y pixel)
+\par     Next XCounter
+\par 
+\par End Sub
+\par 
+\par Public Sub DrawGradient(hDC As Long, Colour1 As Long, _
+\par     Colour2 As Long, Width As Integer, Height As Integer, _
+\par     Optional Left As Integer = 0, Optional Top As Integer = 0, _
+\par     Optional Orientation As LandscapePortscape = Landscape, _
+\par     Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Draws a gradient (from one colour to another) on an object
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim Colour(1 To 2) As ColourInfo 'Variables to hold the colour info
+\par     Dim RedDiff, GreenDiff, BlueDiff As Double 'The difference from Colour 1 to 2
+\par     Dim Red, Green, Blue As Double 'Used to hold the current values when the colour is changed in the loop
+\par     Dim XCounter, YCounter As Integer 'Loop counters for drawing the gradient
+\par 
+\par     'Get the Red, Green & Blue of the colours
+\par     Colour(1) = GetColourInfo(Colour1)
+\par     Colour(2) = GetColourInfo(Colour2)
+\par 
+\par     'Find the difference in the Red, Green and Blues
+\par     RedDiff = Colour(2).Red - Colour(1).Red
+\par     GreenDiff = Colour(2).Green - Colour(1).Green
+\par     BlueDiff = Colour(2).Blue - Colour(1).Blue
+\par     
+\par     'If the orientation = portrait
+\par     If Orientation = Portrait Then
+\par         'Make the increment amounts for each colour _
+\par          equal the correct steps by dividing by the height
+\par         RedDiff = RedDiff / Height
+\par         GreenDiff = GreenDiff / Height
+\par         BlueDiff = BlueDiff / Height
+\par     'If the orientation = landscape
+\par     Else
+\par         'Make the increment amounts for each colour _
+\par          equal the correct steps by dividing by the width
+\par         RedDiff = RedDiff / Width
+\par         GreenDiff = GreenDiff / Width
+\par         BlueDiff = BlueDiff / Width
+\par     End If
+\par 
+\par     'Set the starting point to the first colour given
+\par     Red = Colour(1).Red
+\par     Green = Colour(1).Green
+\par     Blue = Colour(1).Blue
+\par     
+\par     'If the orientation = portrait
+\par     If Orientation = Portrait Then
+\par         'Loop for the Height of the gradient
+\par         For YCounter = Top To Top + Height
+\par             'Loop for the Width of the gradient
+\par             For XCounter = Left To Left + Width
+\par                 'Set the pixel
+\par                 Call SetPixel(hDC, XCounter, YCounter, RGB(Red, Green, Blue))
+\par             'On to next pixel
+\par             Next XCounter
+\par             'Increment the Colours
+\par             Red = Red + RedDiff
+\par             Green = Green + GreenDiff
+\par             Blue = Blue + BlueDiff
+\par         'On to next pixel
+\par         Next YCounter
+\par     
+\par     'If the orientation = Landscape
+\par     Else
+\par         'Loop for the Width of the gradient
+\par         For XCounter = Left To Left + Width
+\par             'Loop for the Height of the gradient
+\par             For YCounter = Top To Top + Height
+\par                 'Set the pixel
+\par                 Call SetPixel(hDC, XCounter, YCounter, RGB(Red, Green, Blue))
+\par             'On to next pixel
+\par             Next YCounter
+\par             'Increment the Colours
+\par             Red = Red + RedDiff
+\par             Green = Green + GreenDiff
+\par             Blue = Blue + BlueDiff
+\par             'If they want do events do them
+\par             If DoEvent = True Then DoEvents
+\par         'On to next pixel
+\par         Next XCounter
+\par     End If
+\par     
+\par End Sub
+\par 
+\par Public Function FindColour(hDC As Long, Colour As Long, _
+\par     Width As Integer, Height As Integer, _
+\par     Optional Left As Integer = 0, Optional Top As Integer = 0, _
+\par     Optional DoEvent As Boolean = False) As POINTAPI
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Find the colour in a picture and returns the pixel co-ordinates
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par 
+\par     'Set initial values to -1 so that if the colour is not found _
+\par      -1 will be returned
+\par     FindColour.X = -1
+\par     FindColour.Y = -1
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width
+\par             'If the current pixel's colour is the specified colour
+\par             If GetPixel(hDC, XCounter, YCounter) = Colour Then
+\par                 'Return the co-ordinates
+\par                 FindColour.X = XCounter
+\par                 FindColour.Y = YCounter
+\par                 'Exit as the pixel has been found
+\par                 Exit Function
+\par             End If
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Function
+\par 
+\par Public Function FindHDC(hWnd As Long) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Finds the DC of an object - to find the Desktop window _
+\par      simply pass the constant HWND_DESKTOP
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par         
+\par     On Error GoTo ErrorHandler
+\par 
+\par     'Find the DC of the object
+\par     FindHDC = GetDC(hWnd)
+\par     'Release it to free up resources
+\par     Call ReleaseDC(hWnd, FindHDC)
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return -1 in case of an unjustified error
+\par     FindHDC = -1
+\par End Function
+\par 
+\par Public Sub FlipImage(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional Orientation As _
+\par     LandscapePortscape = Landscape, Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Flips/Mirrors a Picture
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim LongColour(1 To 2) As Long 'Variable to hold the long colour
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim XToValue, YToValue As Integer 'Max loop values
+\par     
+\par     'Find the max to values for the loops
+\par     If Orientation = Landscape Then
+\par         YToValue = (Top + Height) / 2
+\par         XToValue = Left + Width
+\par     Else
+\par         YToValue = Top + Height
+\par         XToValue = (Left + Width) / 2
+\par     End If
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To YToValue
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To XToValue
+\par             'Get the current pixel's colour
+\par             LongColour(1) = GetPixel(hDC, XCounter, YCounter)
+\par             If Orientation = Landscape Then
+\par                 'Get the opposite pixel's colour
+\par                 LongColour(2) = GetPixel(hDC, XCounter, Height - YCounter)
+\par             Else
+\par                 'Get the opposite pixel's colour
+\par                 LongColour(2) = GetPixel(hDC, Width - XCounter, YCounter)
+\par             End If
+\par             'Set the current pixel's colour
+\par             Call SetPixel(hDC, XCounter, YCounter, LongColour(2))
+\par             If Orientation = Landscape Then
+\par                 'Set the opposite pixel's colour
+\par                 Call SetPixel(hDC, XCounter, Height - YCounter, LongColour(1))
+\par             Else
+\par                 'Set the opposite pixel's colour
+\par                 Call SetPixel(hDC, Width - XCounter, YCounter, LongColour(1))
+\par             End If
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par Public Function GetColourInfo(ByVal LongColour As Long) As ColourInfo
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Finds the Red, Green, Blue and Hex values that make up a long colour
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     
+\par     'Set the initial values to  -1 so that if there is an error _
+\par      the Colour format in which the error occurred will = -1
+\par     GetColourInfo.Red = -1
+\par     GetColourInfo.Green = -1
+\par     GetColourInfo.Blue = -1
+\par     GetColourInfo.Hexadecimal = -1
+\par     
+\par     'Find the amount of Red, Green & Blues (0 to 255) in the long colour
+\par     GetColourInfo.Red = LongColour Mod 256&
+\par     GetColourInfo.Green = ((LongColour And &HFF00&) / 256&) Mod 256&
+\par     GetColourInfo.Blue = ((LongColour And &HFF0000) / 65536) Mod 256&
+\par     'Find the lengths of RED, GREEN and BLUE and add a 0 to the beginning if _
+\par      the are only 1 character long
+\par     If Len(Hex(GetColourInfo.Red)) = 1 Then
+\par         GetColourInfo.Hexadecimal = "0" & Hex(GetColourInfo.Red)
+\par     Else
+\par         GetColourInfo.Hexadecimal = Hex(GetColourInfo.Red)
+\par     End If
+\par     If Len(Hex(GetColourInfo.Green)) = 1 Then
+\par         GetColourInfo.Hexadecimal = GetColourInfo.Hexadecimal & "0" & Hex(GetColourInfo.Green)
+\par     Else
+\par         GetColourInfo.Hexadecimal = GetColourInfo.Hexadecimal & Hex(GetColourInfo.Green)
+\par     End If
+\par     If Len(Hex(GetColourInfo.Blue)) = 1 Then
+\par         GetColourInfo.Hexadecimal = GetColourInfo.Hexadecimal & "0" & Hex(GetColourInfo.Blue)
+\par     Else
+\par         GetColourInfo.Hexadecimal = GetColourInfo.Hexadecimal & Hex(GetColourInfo.Blue)
+\par     End If
+\par 
+\par End Function
+\par 
+\par Public Function InvertBinary(BitString As String) As String
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Inverts a BitString (i.e. all 0s become 1s & vice versa)
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error GoTo ErrorHandler
+\par     Dim Counter As Integer 'For loops
+\par     
+\par     'Loop for length of BitString
+\par     For Counter = 1 To Len(BitString)
+\par         'If the current Digit is a 0
+\par         If Mid(BitString, Counter, 1) = "0" Then
+\par             'Change it to a 1
+\par             InvertBinary = InvertBinary & "1"
+\par         'If the current Digit is a 1
+\par         ElseIf Mid(BitString, Counter, 1) = "1" Then
+\par             'Change it to a 0
+\par             InvertBinary = InvertBinary & "0"
+\par         End If
+\par     'On to next Digit
+\par     Next Counter
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return the original BitString
+\par     InvertBinary = BitString
+\par End Function
+\par 
+\par Public Function InvertColour(LongColour As Long) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Returns the inverse of a colour
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error GoTo ErrorHandler
+\par     Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Get the RGB of the specified colour
+\par     Colours = GetColourInfo(LongColour)
+\par     'Convert the RGB to binary, then invert them & then convert them back to decimal
+\par     Colours.Red = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Red)))
+\par     Colours.Green = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Green)))
+\par     Colours.Blue = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Blue)))
+\par     'Return the inverted RGB
+\par     InvertColour = RGB(Colours.Red, Colours.Green, Colours.Blue)
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return the original colour
+\par     InvertColour = LongColour
+\par End Function
+\par 
+\par Public Sub InvertPicture(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0) ', Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Inverts the colours of a picture
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim InvertSize As RECT
+\par     'Dim XCounter, YCounter As Integer 'For Loops
+\par     'Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Loop for the Height of the picture
+\par     'For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         'For XCounter = Left To Left + Width
+\par             'Get the RGB of the current pixel
+\par             'Colours = GetColourInfo(GetPixel(Picture.hDC, XCounter, YCounter))
+\par             'Convert the RGB to binary, then invert them & then convert them back to decimal
+\par             'Colours.Red = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Red)))
+\par             'Colours.Green = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Green)))
+\par             'Colours.Blue = ConvertToDecimal(InvertBinary(ConvertToBinary(Colours.Blue)))
+\par             'Set the inverted RGB to the current pixel
+\par             'Call SetPixel(Picture.hDC, XCounter, YCounter, RGB(Colours.Red, Colours.Green, Colours.Blue))
+\par         'On to next Width pixel
+\par         'Next XCounter
+\par         'If they want do events do them
+\par         'If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     'Next YCounter
+\par     
+\par     'Set the size into the Rect variable
+\par     InvertSize.Left = Left
+\par     InvertSize.Top = Top
+\par     InvertSize.Right = Left + Width
+\par     InvertSize.Bottom = Top + Height
+\par     'Invert the selection
+\par     Call InvertRect(hDC, InvertSize)
+\par     
+\par End Sub
+\par 
+\par Public Sub MosaicPicture(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional MosaicWidth As Integer = 5, _
+\par     Optional MosaicHeight As Integer = 5, Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Makes a mosaic effect on a picture
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim LongColour As Long 'Variable to hold the long colour
+\par     Dim XCounter, YCounter, MosiacX, MosiacY As Integer 'Loop counters
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height Step MosaicHeight
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width Step MosaicWidth
+\par             'Make sure we don't go over the width or Height
+\par             If XCounter >= Width Or YCounter >= Height Then Exit For
+\par             'Find the colour of the current pixel
+\par             LongColour = GetPixel(hDC, XCounter, YCounter)
+\par             'Loop for Left to Right of the current pixel by the specified width / 2
+\par             For MosiacX = Int("-" & (MosaicWidth / 2)) To MosaicWidth / 2
+\par                 'Loop for Top to Bottom of the of the current pixel by the specified Height / 2
+\par                 For MosiacY = Int("-" & (MosaicHeight / 2)) To MosaicHeight / 2
+\par                     'Set the pixels with all the same Colour
+\par                     Call SetPixel(hDC, XCounter + MosiacX, YCounter + MosiacY, LongColour)
+\par                 'On to next Height pixel
+\par                 Next MosiacY
+\par             'On to next Width pixel
+\par             Next MosiacX
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 'FIX THIS
+\par '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par Public Sub SepiaPicture(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Turns a picture to sepia
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width
+\par             'Find the RGBs of the colour
+\par             Colours = GetColourInfo(GetPixel(hDC, XCounter, YCounter))
+\par             'Set the pixel to the specified amounts of RGB
+\par             Call SetPixel(hDC, XCounter, YCounter, RGB(Colours.Red - ((Colours.Red / 3) / 2), _
+\par                 Colours.Green - ((Colours.Green / 3) / 2), Colours.Blue - ((Colours.Blue / 3) / 2)))
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par Public Function SetRGBInColour(Colour As Long, Optional ByVal Red As Integer = -1, _
+\par     Optional ByVal Green As Integer = -1, Optional ByVal Blue As Integer = -1) As Long
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Returns a colour with the set amount of RGB
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error GoTo ErrorHandler
+\par     Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Make sure that the RGB values are <= then 255
+\par     If Red > 255 Then Red = 255
+\par     If Green > 255 Then Green = 255
+\par     If Blue > 255 Then Blue = 255
+\par     
+\par     'Find the RGBs of the colour
+\par     Colours = GetColourInfo(Colour)
+\par     
+\par     'If the RGB is to be changed, change it
+\par     If Red > -1 Then Colours.Red = Red
+\par     If Green > -1 Then Colours.Green = Green
+\par     If Blue > -1 Then Colours.Blue = Blue
+\par     
+\par     'Return the long colour via RGB function
+\par     SetRGBInColour = RGB(Colours.Red, Colours.Green, Colours.Blue)
+\par     'Exit so as not to cause an unjustified error
+\par     Exit Function
+\par     
+\par ErrorHandler:
+\par     'Return the original colour
+\par     SetRGBInColour = Colour
+\par End Function
+\par     
+\par Public Sub SetRGBInPicture(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional ByVal Red As Integer = -1, _
+\par     Optional ByVal Green As Integer = -1, Optional ByVal Blue As Integer = -1, _
+\par     Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Set the RGB amounts in a Picture
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par 
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'If no values are to be changed exit
+\par     If Red <= -1 And Green <= -1 And Blue <= -1 Then Exit Sub
+\par     
+\par     'Make sure that the RGB values are <= then 255
+\par     If Red > 255 Then Red = 255
+\par     If Green > 255 Then Green = 255
+\par     If Blue > 255 Then Blue = 255
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width
+\par             'Find the RGBs of the colour
+\par             Colours = GetColourInfo(GetPixel(hDC, XCounter, YCounter))
+\par             'If the RGB is to be changed, change it
+\par             If Red > -1 Then Colours.Red = (Colours.Red + Red) / 2
+\par             If Green > -1 Then Colours.Green = (Colours.Green + Green) / 2
+\par             If Blue > -1 Then Colours.Blue = (Colours.Blue + Blue) / 2
+\par             'Set the pixel to the specified amounts of RGB
+\par             Call SetPixel(hDC, XCounter, YCounter, _
+\par                 SetRGBInColour(RGB(Colours.Red, Colours.Green, Colours.Blue)))
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par Public Sub TwoBitPalette(hDC As Long, Width As Integer, _
+\par     Height As Integer, Optional Left As Integer = 0, _
+\par     Optional Top As Integer = 0, Optional CutOffPoint As Byte = 127, _
+\par     Optional LightColour As Long = &HFFFFFF, _
+\par     Optional DarkColour As Long = &H0&, Optional DoEvent As Boolean = False)
+\par     'Description'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     'Turns a picture to BW (or any two colours)
+\par     '*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'*'
+\par     
+\par     On Error Resume Next
+\par     Dim XCounter, YCounter As Integer 'Loop counters
+\par     Dim Colours As ColourInfo 'Variable to hold the colour info
+\par     
+\par     'Loop for the Height of the picture
+\par     For YCounter = Top To Top + Height
+\par         'Loop for the Width of the picture
+\par         For XCounter = Left To Left + Width
+\par             'Find the RGBs of the colour
+\par             Colours = GetColourInfo(GetPixel(hDC, XCounter, YCounter))
+\par             'If the colour is light
+\par             If Colours.Red >= CutOffPoint And Colours.Green >= CutOffPoint _
+\par                 And Colours.Blue >= CutOffPoint Then
+\par                 'Set the pixel to the DarkColour
+\par                 Call SetPixel(hDC, XCounter, YCounter, LightColour)
+\par             'If the colour is light
+\par             Else
+\par                 'Set the pixel to the LightColour
+\par                 Call SetPixel(hDC, XCounter, YCounter, DarkColour)
+\par             End If
+\par         'On to next Width pixel
+\par         Next XCounter
+\par         'If they want do events do them
+\par         If DoEvent = True Then DoEvents
+\par     'On to next Height pixel
+\par     Next YCounter
+\par     
+\par End Sub
+\par 
+\par \plain\f5\fs24 
+\par }
+ 

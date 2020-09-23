@@ -1,0 +1,57 @@
+{\rtf1\ansi\ansicpg1252\uc1 \deff0\deflang1033\deflangfe1033{\fonttbl{\f0\froman\fcharset0\fprq2{\*\panose 02020603050405020304}Times New Roman;}{\f27\fswiss\fcharset0\fprq2{\*\panose 020b0604030504040204}Tahoma;}
+{\f32\froman\fcharset238\fprq2 Times New Roman CE;}{\f33\froman\fcharset204\fprq2 Times New Roman Cyr;}{\f35\froman\fcharset161\fprq2 Times New Roman Greek;}{\f36\froman\fcharset162\fprq2 Times New Roman Tur;}
+{\f37\froman\fcharset177\fprq2 Times New Roman (Hebrew);}{\f38\froman\fcharset178\fprq2 Times New Roman (Arabic);}{\f39\froman\fcharset186\fprq2 Times New Roman Baltic;}{\f248\fswiss\fcharset238\fprq2 Tahoma CE;}
+{\f249\fswiss\fcharset204\fprq2 Tahoma Cyr;}{\f251\fswiss\fcharset161\fprq2 Tahoma Greek;}{\f252\fswiss\fcharset162\fprq2 Tahoma Tur;}{\f253\fswiss\fcharset177\fprq2 Tahoma (Hebrew);}{\f254\fswiss\fcharset178\fprq2 Tahoma (Arabic);}
+{\f255\fswiss\fcharset186\fprq2 Tahoma Baltic;}}{\colortbl;\red0\green0\blue0;\red0\green0\blue255;\red0\green255\blue255;\red0\green255\blue0;\red255\green0\blue255;\red255\green0\blue0;\red255\green255\blue0;\red255\green255\blue255;
+\red0\green0\blue128;\red0\green128\blue128;\red0\green128\blue0;\red128\green0\blue128;\red128\green0\blue0;\red128\green128\blue0;\red128\green128\blue128;\red192\green192\blue192;}{\stylesheet{
+\ql \li0\ri0\widctlpar\aspalpha\aspnum\faauto\adjustright\rin0\lin0\itap0 \fs24\lang2057\langfe1033\cgrid\langnp2057\langfenp1033 \snext0 Normal;}{\*\cs10 \additive Default Paragraph Font;}{\s15\qc \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 
+\f27\fs24\ul\lang1033\langfe1033\cgrid\langnp1033\langfenp1033 \sbasedon0 \snext15 Title;}}{\info{\author Ricky Bull}{\operator Ricky Bull}{\creatim\yr2001\mo3\dy11\hr16\min46}{\revtim\yr2001\mo3\dy17\hr14\min18}{\version8}{\edmins4}{\nofpages1}
+{\nofwords264}{\nofchars1509}{\nofcharsws0}{\vern8247}}\widowctrl\ftnbj\aenddoc\noxlattoyen\expshrtn\noultrlspc\dntblnsbdb\nospaceforul\hyphcaps0\horzdoc\dghspace120\dgvspace120\dghorigin1701\dgvorigin1984\dghshow0\dgvshow3
+\jcompress\viewkind4\viewscale100\nolnhtadjtbl \fet0\sectd \linex0\sectdefaultcl {\*\pnseclvl1\pnucrm\pnstart1\pnindent720\pnhang{\pntxta .}}{\*\pnseclvl2\pnucltr\pnstart1\pnindent720\pnhang{\pntxta .}}{\*\pnseclvl3\pndec\pnstart1\pnindent720\pnhang
+{\pntxta .}}{\*\pnseclvl4\pnlcltr\pnstart1\pnindent720\pnhang{\pntxta )}}{\*\pnseclvl5\pndec\pnstart1\pnindent720\pnhang{\pntxtb (}{\pntxta )}}{\*\pnseclvl6\pnlcltr\pnstart1\pnindent720\pnhang{\pntxtb (}{\pntxta )}}{\*\pnseclvl7
+\pnlcrm\pnstart1\pnindent720\pnhang{\pntxtb (}{\pntxta )}}{\*\pnseclvl8\pnlcltr\pnstart1\pnindent720\pnhang{\pntxtb (}{\pntxta )}}{\*\pnseclvl9\pnlcrm\pnstart1\pnindent720\pnhang{\pntxtb (}{\pntxta )}}\pard\plain 
+\s15\qc \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 \f27\fs24\ul\lang1033\langfe1033\cgrid\langnp1033\langfenp1033 {How to Get The Cursor Position
+\par }\pard\plain \qc \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 \fs24\lang2057\langfe1033\cgrid\langnp2057\langfenp1033 {\f27\fs20\ul\lang1033\langfe1033\langnp1033 Written by Rick Bull}{\f27\lang1033\langfe1033\langnp1033 
+\par }\pard \ql \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 
+\par To find out where the cursor position is on-screen we need to declare the API function:
+\par 
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Private Declare Function }{\f27\fs20\lang1033\langfe1033\langnp1033 GetCursorPos }{
+\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Lib }{\f27\fs20\lang1033\langfe1033\langnp1033 "user32" }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Alias }{\f27\fs20\lang1033\langfe1033\langnp1033 "GetCursorPos" (lpPoint }{
+\f27\fs20\cf9\lang1033\langfe1033\langnp1033 As }{\f27\fs20\lang1033\langfe1033\langnp1033 POINTAPI) }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 As Long
+\par }\pard \ql \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 {\f27\fs20\cf1\lang1033\langfe1033\langnp1033 
+\par As you have probably noticed 'lpPoint' is declared as 'POINTAPI'. This is a special Type that hold the X & Y co-ordinates of the cursor position. But as this type is not normally in Visual basic, we will have to declare it ourselves:
+\par 
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\cf1\lang1033\langfe1033\langnp1033 \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Private Type}{\f27\fs20\cf1\lang1033\langfe1033\langnp1033  POINTAPI
+\par }\pard \ql \li1418\ri0\nowidctlpar\faauto\rin0\lin1418\itap0 {\f27\fs20\cf1\lang1033\langfe1033\langnp1033 x }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 As Long}{\f27\fs20\cf1\lang1033\langfe1033\langnp1033 
+\par \tab y }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 As Long}{\f27\fs20\cf1\lang1033\langfe1033\langnp1033 
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\cf1\lang1033\langfe1033\langnp1033 \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 End Type}{\f27\fs20\lang1033\langfe1033\langnp1033 
+\par }\pard \ql \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 
+\par These declarations can be put in the General section of a form or Module (although you may want to declare them as public in a module - so that you can use them throughout y
+our project) .This is will let us hold the X & Y values. Now to input the X & Y co-ordinates into a variable we will have to first declare a variable which is of the Type 'POINTAPI' and then use the function 'GetCursorPos' to input them into the variable.
+ We could, for example, do this when the user presses a command button, like so:
+\par \tab 
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Private Sub }{\f27\fs20\lang1033\langfe1033\langnp1033 Command1_Click()
+\par \tab 
+\par }\pard \ql \li1418\ri0\nowidctlpar\faauto\rin0\lin1418\itap0 {\f27\fs20\cf11\lang1033\langfe1033\langnp1033 'Declare a variable to hold the co-ordinates}{\f27\fs20\lang1033\langfe1033\langnp1033 
+\par \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 Dim }{\f27\fs20\lang1033\langfe1033\langnp1033 CursorPosition }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 As POINTAPI
+\par }{\f27\fs20\lang1033\langfe1033\langnp1033 
+\par '}{\f27\fs20\cf11\lang1033\langfe1033\langnp1033 Input the co-ordinates into the newly declared variable}{\f27\fs20\lang1033\langfe1033\langnp1033 
+\par C}{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 all }{\f27\fs20\lang1033\langfe1033\langnp1033 GetCursorPos(CursorPosition)
+\par 
+\par }{\f27\fs20\cf11\lang1033\langfe1033\langnp1033 'Now tell the user the co-ordinates
+\par \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 MsgBox}{\f27\fs20\lang1033\langfe1033\langnp1033  "The cursors co-ordinates are:" & vbNewLine & "X: " & CursorPosition.x & vbNewLine & "Y: " & CursorPosition.y
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 
+\par \tab }{\f27\fs20\cf9\lang1033\langfe1033\langnp1033 End Sub
+\par }\pard \ql \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 
+\par This would result in a message box telling the user of the cursor's X & Y co-ordinates. Pretty cool, huh?
+\par * Note - Remeber that this function will return the co-ordinates in Pixels rather than Twips (VB measurements). So to convert to twips you would need to write:
+\par \tab 
+\par }\pard \ql \li709\ri0\nowidctlpar\faauto\rin0\lin709\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 \tab X * Screen.TwipsPerPixelX
+\par \tab Y * Screen.TwipsPerPixelY
+\par }\pard \ql \li0\ri0\nowidctlpar\faauto\rin0\lin0\itap0 {\f27\fs20\lang1033\langfe1033\langnp1033 
+\par ... And to convert from twips to pixels:
+\par 
+\par \tab X / Screen.TwipsPerPixelX
+\par \tab Y / Screen.TwipsPerPixelY
+\par }{\f27\fs20\cf1\lang1033\langfe1033\langnp1033 
+\par }}
